@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart'; //this gives access to pre built widgets
+/*import 'package:flutter/material.dart'; //this gives access to pre built widgets
 
 void main() {  //main function has the programms to be executed
   runApp(const MyApp()); //runApp function is a global function that takes in a widget and reders it on chosen device
@@ -213,3 +213,130 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+*/
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;//It imports the http package, which provides a set of high-level functions and classes for making HTTP requests, such as GET, POST, PUT, DELETE, etc.
+import 'dart:convert'; //It imports the dart:convert library, which provides utilities for encoding and decoding various data formats, particularly JSON, UTF-8, and Base64.
+
+void main() => runApp(RecipeApp());
+
+class RecipeApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'AI-Powered Recipe App',
+      theme: ThemeData(primarySwatch: Colors.green),
+      home: RecipeHomePage(), //home is set to the stateful widget RecipeHomePage
+    );
+  }
+}
+
+class RecipeHomePage extends StatefulWidget {
+  @override
+  _RecipeHomePageState createState() => _RecipeHomePageState();
+}/*this code defines a stateful widget called RecipeHomePage.
+ The createState() method is overridden to link the RecipeHomePage
+  widget to its corresponding state class, _RecipeHomePageState. 
+  This state class will contain the logic and state management 
+  for the RecipeHomePage widget, enabling the widget to rebuild 
+its UI dynamically in response to state changes*/ 
+
+class _RecipeHomePageState extends State<RecipeHomePage> { //in state<> give class name that extends statefulWidget
+ 
+  final TextEditingController _controller = TextEditingController();
+  /* TextEditingController: This is a class in Flutter that controls and tracks 
+  the state of a text field. It is used to read, modify, or listen to changes 
+  in the text field. For instance, you can use it to
+   get the current value of the text field, clear the text,
+    or set the text programmatically */
+
+  List<String> _recipes = []; //initialise a recipe list
+
+  Future<void> _getRecipes() async {
+    final response = await http.post(
+      Uri.parse('http://127.0.0.1:5000/get-recipes'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'ingredients': _controller.text.split(','),
+      }),
+      /*body: This is the actual data being sent to the server in the request.
+    jsonEncode(...): This function converts a Dart object into a JSON string.
+     In this case, it converts a map containing the ingredients to a JSON string.
+    <String, dynamic>{ 'ingredients': _controller.text.split(','), }: 
+    This is a map representing the data to be sent.
+    'ingredients': The key in the JSON object that will be sent to the server.
+     _controller.text.split(','): This splits the text from the _controller 
+     (likely connected to a text input) into a list of ingredients
+     based on commas. This list is then associated with the ingredients key in the JSON body */
+    );
+    /*await: This keyword indicates that the program should
+     wait for the http.post request to complete before moving
+      on to the next line of code. The function that contains 
+      this code must be marked as async to use await.
+     http.post(...): This is a function from the http package that
+     sends an HTTP POST request to the specified URL with the provided headers and body */
+
+    if (response.statusCode == 200) {
+      setState(() {
+        _recipes = List<String>.from(jsonDecode(response.body)); //get response and jsonify the response body
+      });
+    } else {
+      throw Exception('Failed to load recipes');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('AI-Powered Recipe App'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0), 
+        child: Column(
+          children: <Widget>[
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                labelText: 'Enter ingredients (comma-separated)',
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _getRecipes,
+              child: Text('Get Recipes'),
+            ),
+            Expanded(                         //The Expanded widget tells its parent to allocate remaining space to its child.  The child widget will grow to fill the available 
+              child: ListView.builder(         //space in the parent widget’s main axis direction (vertical for Column, horizontal for Row).
+                itemCount: _recipes.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(_recipes[index]),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+/*This specifies the child widget to be used within a parent widget. 
+In this case, ListView.builder is the child widget.
+ListView.builder(...)
+
+itemCount: _recipes.length
+
+itemCount: Specifies the number of items in the list. _recipes.
+length is a variable that holds the number of items you want to display in the list.
+ Each item will be created and displayed based on this count.
+itemBuilder: (context, index) { ... }
+
+itemBuilder: This is a callback function that builds each item in the list.
+ It is called for each item in the list with its position (index) and a BuildContext.
+context: The BuildContext that provides information about the location of the widget in the widget tree.
+index: The position of the current item being built. This index is used to access data from the _recipes list. */
